@@ -11,6 +11,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.109.0",
     "bcrypt": "^6.0.0",
     "console": "^0.7.2",
     "cors": "^2.8.6",
