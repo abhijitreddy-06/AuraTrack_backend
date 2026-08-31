@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Logs and operating-system files
+*.log
+.DS_Store
+Thumbs.db
+
+# Temporary scripts and generated files
+tmp-*.mjs
+coverage/
+
+# Firebase Admin service-account credentials
+auratrack-87c36-3930ec0d25ea.json
+*-firebase-adminsdk-*.json# Dependencies
+node_modules/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Logs and operating-system files
+*.log
+.DS_Store
+Thumbs.db
+
+# Temporary scripts and generated files
+tmp-*.mjs
+coverage/
+
+# Firebase Admin service-account credentials
+auratrack-87c36-3930ec0d25ea.json
+*-firebase-adminsdk-*.json
