@@ -15,6 +15,7 @@ import financeRoutes from "./finance/routes/finance.route.js";
 import passwordRoutes from "./passwords/routes/password.route.js";
 import settingsRoutes from "./settings/routes/settings.route.js";
 import notificationRoutes from "./notifications/notification.route.js";
+import documentRoutes from "./documents/routes/document.route.js";
 
 const app = express();
 
@@ -58,6 +59,7 @@ app.use("/api/finance", financeRoutes);
 app.use("/api/passwords", passwordRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/documents", documentRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
