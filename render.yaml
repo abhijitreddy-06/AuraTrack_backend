@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: auratrack-backend
+    runtime: node
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
