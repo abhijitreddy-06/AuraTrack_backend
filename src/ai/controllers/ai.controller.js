@@ -175,7 +175,7 @@ export const askAi = async (req, res, next) => {
             : error?.statusCode === 400 || error?.statusCode === 413
               ? "Invalid AI request."
               : error?.statusCode === 502
-                ? "Aura's AI provider is unavailable. Check the Gemini API key and model configuration."
+                ? "Aura's AI provider is unavailable. Check the OpenRouter API key and model configuration."
                 : "AI request failed.";
 
     const clientError = new Error(safeMessage);

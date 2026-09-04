@@ -95,12 +95,12 @@ test("rate limit guard still blocks excess", () => {
   assert.equal(blocked.allowed, false);
 });
 
-test("Gemini timeout/failure is handled gracefully", async () => {
-  const originalKey = process.env.GEMINI_API_KEY;
-  const originalTimeout = process.env.GEMINI_TIMEOUT_MS;
+test("OpenRouter timeout/failure is handled gracefully", async () => {
+  const originalKey = process.env.OPENROUTER_API_KEY;
+  const originalTimeout = process.env.OPENROUTER_TIMEOUT_MS;
 
-  process.env.GEMINI_API_KEY = "invalid-key";
-  process.env.GEMINI_TIMEOUT_MS = "1";
+  process.env.OPENROUTER_API_KEY = "invalid-key";
+  process.env.OPENROUTER_TIMEOUT_MS = "1";
 
   try {
     await assert.rejects(
@@ -109,20 +109,20 @@ test("Gemini timeout/failure is handled gracefully", async () => {
           "How much did I spend this month?",
           "user-123",
         ),
-      /Gemini|unavailable|timed out|failed/i,
+      /OpenRouter|unavailable|timed out|failed/i,
     );
   } finally {
-    if (originalKey === undefined) delete process.env.GEMINI_API_KEY;
-    else process.env.GEMINI_API_KEY = originalKey;
-    if (originalTimeout === undefined) delete process.env.GEMINI_TIMEOUT_MS;
-    else process.env.GEMINI_TIMEOUT_MS = originalTimeout;
+    if (originalKey === undefined) delete process.env.OPENROUTER_API_KEY;
+    else process.env.OPENROUTER_API_KEY = originalKey;
+    if (originalTimeout === undefined) delete process.env.OPENROUTER_TIMEOUT_MS;
+    else process.env.OPENROUTER_TIMEOUT_MS = originalTimeout;
   }
 });
 
 test("missing API key is handled", async () => {
-  const originalKey = process.env.GEMINI_API_KEY;
+  const originalKey = process.env.OPENROUTER_API_KEY;
 
-  delete process.env.GEMINI_API_KEY;
+  delete process.env.OPENROUTER_API_KEY;
 
   try {
     await assert.rejects(
@@ -131,10 +131,10 @@ test("missing API key is handled", async () => {
           "How much did I spend this month?",
           "user-123",
         ),
-      /Gemini|unavailable/i,
+      /OpenRouter|unavailable/i,
     );
   } finally {
-    if (originalKey === undefined) delete process.env.GEMINI_API_KEY;
-    else process.env.GEMINI_API_KEY = originalKey;
+    if (originalKey === undefined) delete process.env.OPENROUTER_API_KEY;
+    else process.env.OPENROUTER_API_KEY = originalKey;
   }
 });

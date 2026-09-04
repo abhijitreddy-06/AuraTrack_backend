@@ -3,10 +3,12 @@ import { validateAiQuery } from "./ai-query.service.js";
 const MAX_QUESTION_LENGTH = 500;
 const MAX_STRUCTURED_QUERY_BYTES = 20000;
 
-const getGeminiConfig = () => ({
-  model: process.env.GEMINI_MODEL || "gemini-3.7-flash",
-  apiKey: process.env.GEMINI_API_KEY,
-  timeoutMs: Number(process.env.GEMINI_TIMEOUT_MS || 12000),
+const getOpenRouterConfig = () => ({
+  model: process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini",
+  apiKey: process.env.OPENROUTER_API_KEY,
+  siteUrl: process.env.OPENROUTER_SITE_URL,
+  appName: process.env.OPENROUTER_APP_NAME || "AuraTrack",
+  timeoutMs: Number(process.env.OPENROUTER_TIMEOUT_MS || 20000),
 });
 
 const PROMPT_INJECTION_PATTERNS = [
@@ -57,15 +59,16 @@ Rules:
 - Keep the reply concise and human-friendly.
 `;
 
-const extractTextFromGeminiResponse = (payload) => {
-  const candidate = payload?.candidates?.[0];
-  if (!candidate) return "";
-
-  const parts = candidate.content?.parts || [];
-  return parts
-    .map((part) => part?.text || "")
-    .join("")
-    .trim();
+const extractTextFromOpenRouterResponse = (payload) => {
+  const content = payload?.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content.trim();
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => (typeof part?.text === "string" ? part.text : ""))
+      .join("")
+      .trim();
+  }
+  return "";
 };
 
 const sanitizeAiQuestion = (question) => {
@@ -154,11 +157,11 @@ const parseJsonResponse = (responseText) => {
 
 export { sanitizeAiQuestion, MAX_STRUCTURED_QUERY_BYTES };
 
-const callGemini = async ({ question, systemPrompt }) => {
-  const { apiKey, model, timeoutMs } = getGeminiConfig();
+const callOpenRouter = async ({ question, systemPrompt }) => {
+  const { apiKey, model, siteUrl, appName, timeoutMs } = getOpenRouterConfig();
 
   if (!apiKey) {
-    const error = new Error("Gemini is unavailable");
+    const error = new Error("OpenRouter is unavailable");
     error.statusCode = 503;
     throw error;
   }
@@ -167,26 +170,26 @@ const callGemini = async ({ question, systemPrompt }) => {
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    const headers = {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      ...(siteUrl ? { "HTTP-Referer": siteUrl } : {}),
+      ...(appName ? { "X-Title": appName } : {}),
+    };
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: systemPrompt }],
-          },
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: question }],
-            },
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: question },
           ],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 512,
-            responseMimeType: "application/json",
-          },
+          temperature: 0.2,
+          max_tokens: 512,
+          response_format: { type: "json_object" },
         }),
         signal: controller.signal,
       },
@@ -194,21 +197,21 @@ const callGemini = async ({ question, systemPrompt }) => {
 
     if (!response.ok) {
       const rawDetails = await response.text();
-      logAiError("gemini_provider_error", {
+      logAiError("openrouter_provider_error", {
         message: rawDetails || response.statusText,
         statusCode: response.status,
-        name: "GeminiProviderError",
+        name: "OpenRouterProviderError",
       });
-      const error = new Error("Gemini provider unavailable");
+      const error = new Error("OpenRouter provider unavailable");
       error.statusCode = 502;
       throw error;
     }
 
     const data = await response.json();
-    return extractTextFromGeminiResponse(data);
+    return extractTextFromOpenRouterResponse(data);
   } catch (error) {
     if (error.name === "AbortError") {
-      const timeoutError = new Error("Gemini request timed out");
+      const timeoutError = new Error("OpenRouter request timed out");
       timeoutError.statusCode = 504;
       throw timeoutError;
     }
@@ -217,8 +220,8 @@ const callGemini = async ({ question, systemPrompt }) => {
       throw error;
     }
 
-    logAiError("gemini_call_failed", error);
-    const fallback = new Error("Gemini request failed");
+    logAiError("openrouter_call_failed", error);
+    const fallback = new Error("OpenRouter request failed");
     fallback.statusCode = 502;
     throw fallback;
   } finally {
@@ -238,7 +241,7 @@ export const translateQuestionToStructuredQuery = async (question, userId) => {
     throw error;
   }
 
-  const text = await callGemini({
+  const text = await callOpenRouter({
     question: safeQuestion,
     systemPrompt: SYSTEM_PROMPT,
   });
@@ -262,7 +265,7 @@ export const generateFinalAiAnswer = async (question, databaseResult) => {
     result: databaseResult || null,
   };
 
-  const text = await callGemini({
+  const text = await callOpenRouter({
     question: JSON.stringify(payload),
     systemPrompt: FALLBACK_SYSTEM_PROMPT,
   });
