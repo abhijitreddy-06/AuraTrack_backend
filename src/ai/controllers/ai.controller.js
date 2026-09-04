@@ -174,7 +174,9 @@ export const askAi = async (req, res, next) => {
             ? "AI request timed out. Please try again."
             : error?.statusCode === 400 || error?.statusCode === 413
               ? "Invalid AI request."
-              : "AI request failed.";
+              : error?.statusCode === 502
+                ? "Aura's AI provider is unavailable. Check the Gemini API key and model configuration."
+                : "AI request failed.";
 
     const clientError = new Error(safeMessage);
     clientError.statusCode = error?.statusCode || 500;

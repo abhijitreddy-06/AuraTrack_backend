@@ -200,7 +200,7 @@ const callGemini = async ({ question, systemPrompt }) => {
         name: "GeminiProviderError",
       });
       const error = new Error("Gemini provider unavailable");
-      error.statusCode = response.status >= 500 ? 502 : 400;
+      error.statusCode = 502;
       throw error;
     }
 
