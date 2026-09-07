@@ -3,7 +3,7 @@ import { Habit } from "../habits/models/habit.model.js";
 import { Birthday } from "../birthdays/models/birthday.model.js";
 import { deleteExpiredTodos } from "../todo/services/todo.service.js";
 import { getISTDate, getISTTomorrow, IST_TIME_ZONE } from "../utils/ist.js";
-import { sendReminderOnce } from "./notification.service.js";
+import { checkExpoReceipts, sendReminderOnce } from "./notification.service.js";
 
 let schedulerStarted = false;
 
@@ -47,11 +47,16 @@ export const runTodoCleanupJob = async () => {
   try { await deleteExpiredTodos(); } catch (error) { console.error("IST todo cleanup job failed:", error); }
 };
 
+export const runPushReceiptCheckJob = async () => {
+  try { await checkExpoReceipts(); } catch (error) { console.error("Expo receipt check failed:", error); }
+};
+
 export const startNotificationScheduler = () => {
   if (schedulerStarted) return;
   schedulerStarted = true;
   cron.schedule("0 22 * * *", () => void runHabitReminderJob(), { timezone: IST_TIME_ZONE });
   cron.schedule("0 23 * * *", () => void runBirthdayReminderJob(), { timezone: IST_TIME_ZONE });
   cron.schedule("0 0 * * *", () => void runTodoCleanupJob(), { timezone: IST_TIME_ZONE });
+  cron.schedule("*/15 * * * *", () => void runPushReceiptCheckJob(), { timezone: IST_TIME_ZONE });
   console.log(`IST notification scheduler started (${IST_TIME_ZONE})`);
 };

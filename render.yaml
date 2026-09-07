@@ -5,3 +5,41 @@ services:
     buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /api/health
+  # Render Cron uses UTC. These jobs make delivery reliable even when a web
+  # service is asleep or restarted; Asia/Kolkata is UTC+05:30.
+  - type: cron
+    name: auratrack-habit-reminders
+    runtime: node
+    schedule: "30 16 * * *"
+    buildCommand: npm ci
+    startCommand: npm run jobs:habits
+    envVars:
+      - key: SUPABASE_DB_URL
+        sync: false
+  - type: cron
+    name: auratrack-birthday-reminders
+    runtime: node
+    schedule: "30 17 * * *"
+    buildCommand: npm ci
+    startCommand: npm run jobs:birthdays
+    envVars:
+      - key: SUPABASE_DB_URL
+        sync: false
+  - type: cron
+    name: auratrack-todo-cleanup
+    runtime: node
+    schedule: "30 18 * * *"
+    buildCommand: npm ci
+    startCommand: npm run jobs:todos
+    envVars:
+      - key: SUPABASE_DB_URL
+        sync: false
+  - type: cron
+    name: auratrack-push-receipts
+    runtime: node
+    schedule: "*/15 * * * *"
+    buildCommand: npm ci
+    startCommand: npm run jobs:receipts
+    envVars:
+      - key: SUPABASE_DB_URL
+        sync: false

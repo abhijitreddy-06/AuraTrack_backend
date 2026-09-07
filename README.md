@@ -19,6 +19,16 @@ In Render's Environment page, add these required variables:
 
 Optional variables: `OPENROUTER_MODEL` (default: `openai/gpt-4o-mini`), `OPENROUTER_SITE_URL`, `OPENROUTER_APP_NAME`, `OPENROUTER_TIMEOUT_MS`, `PORT` (Render sets this automatically), `DB_LOGGING`, and `DB_SSL`.
 
+### Notification jobs
+
+`render.yaml` defines four Render Cron Jobs, so reminders still run if the web
+service is asleep or restarted. In the Render Blueprint/environment setup, set
+the same `SUPABASE_DB_URL` on each of these jobs: habit reminders, birthday
+reminders, todo cleanup, and push receipts. The schedules are expressed in UTC
+and correspond to 10:00 PM, 11:00 PM, midnight, and every 15 minutes in
+Asia/Kolkata. Apply `migrations/20260826_add_notifications.sql` and
+`migrations/20260907_add_expo_push_receipts.sql` before deploying the jobs.
+
 For Supabase, set `SUPABASE_DB_URL` to its PostgreSQL connection string; do not expose it to the mobile app.
 
 ### Supabase on Render

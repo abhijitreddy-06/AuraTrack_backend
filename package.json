@@ -8,6 +8,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "jobs:habits": "node scripts/run-notification-job.js habits",
+    "jobs:birthdays": "node scripts/run-notification-job.js birthdays",
+    "jobs:todos": "node scripts/run-notification-job.js todos",
+    "jobs:receipts": "node scripts/run-notification-job.js receipts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
