@@ -5,6 +5,11 @@ services:
     buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /api/health
+    envVars:
+      # Enter this secret only in Render. The cron jobs reference this same
+      # service variable, so every job uses the production database.
+      - key: SUPABASE_DB_URL
+        sync: false
   # Render Cron uses UTC. These jobs make delivery reliable even when a web
   # service is asleep or restarted; Asia/Kolkata is UTC+05:30.
   - type: cron
@@ -15,7 +20,10 @@ services:
     startCommand: npm run jobs:habits
     envVars:
       - key: SUPABASE_DB_URL
-        sync: false
+        fromService:
+          type: web
+          name: auratrack-backend
+          envVarKey: SUPABASE_DB_URL
   - type: cron
     name: auratrack-birthday-reminders
     runtime: node
@@ -24,7 +32,10 @@ services:
     startCommand: npm run jobs:birthdays
     envVars:
       - key: SUPABASE_DB_URL
-        sync: false
+        fromService:
+          type: web
+          name: auratrack-backend
+          envVarKey: SUPABASE_DB_URL
   - type: cron
     name: auratrack-todo-cleanup
     runtime: node
@@ -33,7 +44,10 @@ services:
     startCommand: npm run jobs:todos
     envVars:
       - key: SUPABASE_DB_URL
-        sync: false
+        fromService:
+          type: web
+          name: auratrack-backend
+          envVarKey: SUPABASE_DB_URL
   - type: cron
     name: auratrack-push-receipts
     runtime: node
@@ -42,4 +56,7 @@ services:
     startCommand: npm run jobs:receipts
     envVars:
       - key: SUPABASE_DB_URL
-        sync: false
+        fromService:
+          type: web
+          name: auratrack-backend
+          envVarKey: SUPABASE_DB_URL

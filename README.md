@@ -22,14 +22,21 @@ Optional variables: `OPENROUTER_MODEL` (default: `openai/gpt-4o-mini`), `OPENROU
 ### Notification jobs
 
 `render.yaml` defines four Render Cron Jobs, so reminders still run if the web
-service is asleep or restarted. In the Render Blueprint/environment setup, set
-the same `SUPABASE_DB_URL` on each of these jobs: habit reminders, birthday
-reminders, todo cleanup, and push receipts. The schedules are expressed in UTC
-and correspond to 10:00 PM, 11:00 PM, midnight, and every 15 minutes in
-Asia/Kolkata. Apply `migrations/20260826_add_notifications.sql` and
+service is asleep or restarted. Set `SUPABASE_DB_URL` only on the
+`auratrack-backend` web service. The Blueprint securely references that same
+environment variable from the habit, birthday, todo, and push-receipt jobs, so
+they all use the production database without duplicating the secret. The
+schedules are expressed in UTC and correspond to 10:00 PM, 11:00 PM, midnight,
+and every 15 minutes in Asia/Kolkata. Apply `migrations/20260826_add_notifications.sql` and
 `migrations/20260907_add_expo_push_receipts.sql` before deploying the jobs.
 
 For Supabase, set `SUPABASE_DB_URL` to its PostgreSQL connection string; do not expose it to the mobile app.
+
+For an existing Blueprint, Render does not populate `sync: false` values during
+an update. Confirm `SUPABASE_DB_URL` is set on `auratrack-backend` in the Render
+Dashboard, sync the Blueprint, then use **Trigger Run** on
+`auratrack-push-receipts` to process pending Expo receipts immediately. No
+Firebase service-account JSON is used by any notification cron job.
 
 ### Supabase on Render
 
