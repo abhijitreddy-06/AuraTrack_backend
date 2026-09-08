@@ -90,10 +90,10 @@ export const runPushReceiptCheckJob = async () => {
 export const startNotificationScheduler = () => {
   if (schedulerStarted) return;
   schedulerStarted = true;
-  cron.schedule("5 1 * * *", () => void runHabitReminderJob(), {
+  cron.schedule("0 23 * * *", () => void runHabitReminderJob(), {
     timezone: IST_TIME_ZONE,
   });
-  cron.schedule("0 23 * * *", () => void runBirthdayReminderJob(), {
+  cron.schedule("45 23 * * *", () => void runBirthdayReminderJob(), {
     timezone: IST_TIME_ZONE,
   });
   cron.schedule("0 0 * * *", () => void runTodoCleanupJob(), {

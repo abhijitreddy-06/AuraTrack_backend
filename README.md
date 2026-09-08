@@ -26,7 +26,7 @@ service is asleep or restarted. Set `SUPABASE_DB_URL` only on the
 `auratrack-backend` web service. The Blueprint securely references that same
 environment variable from the habit, birthday, todo, and push-receipt jobs, so
 they all use the production database without duplicating the secret. The
-schedules are expressed in UTC and correspond to 10:00 PM, 11:00 PM, midnight,
+schedules are expressed in UTC and correspond to 11:00 AM, 11:00 PM, midnight,
 and every 15 minutes in Asia/Kolkata. Apply `migrations/20260826_add_notifications.sql` and
 `migrations/20260907_add_expo_push_receipts.sql` before deploying the jobs.
 
