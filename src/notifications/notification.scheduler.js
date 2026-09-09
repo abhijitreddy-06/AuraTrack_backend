@@ -91,7 +91,7 @@ export const startNotificationScheduler = () => {
   if (schedulerStarted) return;
   schedulerStarted = true;
 
-  cron.schedule("0 23 * * *", () => {
+  cron.schedule("20 0 * * *", () => {
     console.log("🔥 HABIT CRON FIRED", new Date().toISOString());
     void runHabitReminderJob();
   }, {
