@@ -90,17 +90,34 @@ export const runPushReceiptCheckJob = async () => {
 export const startNotificationScheduler = () => {
   if (schedulerStarted) return;
   schedulerStarted = true;
-  cron.schedule("0 23 * * *", () => void runHabitReminderJob(), {
+
+  cron.schedule("0 23 * * *", () => {
+    console.log("🔥 HABIT CRON FIRED", new Date().toISOString());
+    void runHabitReminderJob();
+  }, {
     timezone: IST_TIME_ZONE,
   });
-  cron.schedule("45 23 * * *", () => void runBirthdayReminderJob(), {
+
+  cron.schedule("30 23 * * *", () => {
+    console.log("🎂 BIRTHDAY CRON FIRED", new Date().toISOString());
+    void runBirthdayReminderJob();
+  }, {
     timezone: IST_TIME_ZONE,
   });
-  cron.schedule("0 0 * * *", () => void runTodoCleanupJob(), {
+
+  cron.schedule("0 0 * * *", () => {
+    console.log("🧹 TODO CRON FIRED", new Date().toISOString());
+    void runTodoCleanupJob();
+  }, {
     timezone: IST_TIME_ZONE,
   });
-  cron.schedule("*/15 * * * *", () => void runPushReceiptCheckJob(), {
+
+  cron.schedule("*/15 * * * *", () => {
+    console.log("🧾 RECEIPT CRON FIRED", new Date().toISOString());
+    void runPushReceiptCheckJob();
+  }, {
     timezone: IST_TIME_ZONE,
   });
+
   console.log(`IST notification scheduler started (${IST_TIME_ZONE})`);
 };
