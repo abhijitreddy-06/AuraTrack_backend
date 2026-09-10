@@ -91,29 +91,29 @@ export const startNotificationScheduler = () => {
   if (schedulerStarted) return;
   schedulerStarted = true;
 
-  cron.schedule("20 0 * * *", () => {
-    console.log("🔥 HABIT CRON FIRED", new Date().toISOString());
+  cron.schedule("0 10 * * *", () => {
+    // console.log("🔥 HABIT CRON FIRED", new Date().toISOString());
     void runHabitReminderJob();
   }, {
     timezone: IST_TIME_ZONE,
   });
 
-  cron.schedule("30 23 * * *", () => {
-    console.log("🎂 BIRTHDAY CRON FIRED", new Date().toISOString());
+  cron.schedule("10 23 * * *", () => {
+    // console.log("🎂 BIRTHDAY CRON FIRED", new Date().toISOString());
     void runBirthdayReminderJob();
   }, {
     timezone: IST_TIME_ZONE,
   });
 
   cron.schedule("0 0 * * *", () => {
-    console.log("🧹 TODO CRON FIRED", new Date().toISOString());
+    // console.log("🧹 TODO CRON FIRED", new Date().toISOString());
     void runTodoCleanupJob();
   }, {
     timezone: IST_TIME_ZONE,
   });
 
   cron.schedule("*/15 * * * *", () => {
-    console.log("🧾 RECEIPT CRON FIRED", new Date().toISOString());
+    // console.log("🧾 RECEIPT CRON FIRED", new Date().toISOString());
     void runPushReceiptCheckJob();
   }, {
     timezone: IST_TIME_ZONE,

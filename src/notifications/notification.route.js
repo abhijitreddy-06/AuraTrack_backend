@@ -5,11 +5,12 @@ import { removePushToken, savePushToken } from "./notification.controller.js";
 const router = express.Router();
 const logPushTokenRegistration = (req, res, next) => {
   res.once("finish", () => {
-    console.info("Push token registration completed", {
-      userId: req.user?.id ?? null,
-      status: res.statusCode,
-      succeeded: res.statusCode >= 200 && res.statusCode < 300,
-    });
+    // Temporary registration diagnostic; retain the middleware and request flow.
+    // console.info("Push token registration completed", {
+    //   userId: req.user?.id ?? null,
+    //   status: res.statusCode,
+    //   succeeded: res.statusCode >= 200 && res.statusCode < 300,
+    // });
   });
   next();
 };
