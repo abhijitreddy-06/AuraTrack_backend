@@ -35,49 +35,87 @@ const reserveReminder = async (userId, type, reminderDate) => {
 };
 
 const sendExpoMessages = async (tokens, title, body, data) => {
-  if (!tokens.length) return { delivered: false, invalidTokens: [], receiptIds: [] };
+  if (!tokens.length)
+    return { delivered: false, invalidTokens: [], receiptIds: [] };
 
   const batches = Array.from(
     { length: Math.ceil(tokens.length / EXPO_SEND_BATCH_SIZE) },
-    (_, index) => tokens.slice(index * EXPO_SEND_BATCH_SIZE, (index + 1) * EXPO_SEND_BATCH_SIZE),
+    (_, index) =>
+      tokens.slice(
+        index * EXPO_SEND_BATCH_SIZE,
+        (index + 1) * EXPO_SEND_BATCH_SIZE,
+      ),
   );
-  const results = await Promise.all(batches.map(async (batch) => {
-  const response = await fetch(EXPO_PUSH_URL, {
-    method: "POST",
-    headers: { Accept: "application/json", "Accept-encoding": "gzip, deflate", "Content-Type": "application/json" },
-    body: JSON.stringify(batch.map((to) => ({
-      to,
-      title,
-      body,
-      sound: "default",
-      priority: "high",
-      channelId: "default",
-      data,
-    }))),
-  });
-  if (!response.ok) throw new Error(`Expo push service returned ${response.status}`);
-  const result = await response.json();
-  const tickets = Array.isArray(result.data) ? result.data : [];
-  return { batch, tickets };
-  }));
+  const results = await Promise.all(
+    batches.map(async (batch) => {
+      const response = await fetch(EXPO_PUSH_URL, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Accept-encoding": "gzip, deflate",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          batch.map((to) => ({
+            to,
+            title,
+            body,
+            sound: "default",
+            priority: "high",
+            channelId: "default",
+            data,
+          })),
+        ),
+      });
+      if (!response.ok)
+        throw new Error(`Expo push service returned ${response.status}`);
+      const result = await response.json();
+      const tickets = Array.isArray(result.data) ? result.data : [];
+      return { batch, tickets };
+    }),
+  );
 
-  const invalidTokens = results.flatMap(({ batch, tickets }) => tickets.flatMap((ticket, index) =>
-    ticket.status === "error" && ticket.details?.error === "DeviceNotRegistered" ? [batch[index]] : [],
-  ));
-  const receiptIds = results.flatMap(({ batch, tickets }) => tickets.flatMap((ticket, index) =>
-    ticket.status === "ok" && typeof ticket.id === "string" ? [{ ticketId: ticket.id, token: batch[index] }] : [],
-  ));
-  const ticketErrors = results.flatMap(({ tickets }) => tickets.flatMap((ticket) =>
-    ticket.status === "error" ? [ticket.details?.error || "UnknownError"] : [],
-  ));
+  const invalidTokens = results.flatMap(({ batch, tickets }) =>
+    tickets.flatMap((ticket, index) =>
+      ticket.status === "error" &&
+      ticket.details?.error === "DeviceNotRegistered"
+        ? [batch[index]]
+        : [],
+    ),
+  );
+  const receiptIds = results.flatMap(({ batch, tickets }) =>
+    tickets.flatMap((ticket, index) =>
+      ticket.status === "ok" && typeof ticket.id === "string"
+        ? [{ ticketId: ticket.id, token: batch[index] }]
+        : [],
+    ),
+  );
+  const ticketErrors = results.flatMap(({ tickets }) =>
+    tickets.flatMap((ticket) =>
+      ticket.status === "error"
+        ? [ticket.details?.error || "UnknownError"]
+        : [],
+    ),
+  );
   if (ticketErrors.length) {
-    console.error(`Expo push ticket errors: ${[...new Set(ticketErrors)].join(", ")}`);
+    console.error(
+      `Expo push ticket errors: ${[...new Set(ticketErrors)].join(", ")}`,
+    );
   }
   return { delivered: receiptIds.length > 0, invalidTokens, receiptIds };
 };
 
-export const sendReminderOnce = async ({ userId, type, reminderDate, title, body }) => {
-  const tokenRows = await PushToken.findAll({ where: { user_id: userId }, attributes: ["token"] });
+export const sendReminderOnce = async ({
+  userId,
+  type,
+  reminderDate,
+  title,
+  body,
+}) => {
+  const tokenRows = await PushToken.findAll({
+    where: { user_id: userId },
+    attributes: ["token"],
+  });
   const tokens = tokenRows.map(({ token }) => token);
   // Do not consume today's once-only reminder before this user has a device to receive it.
   if (!tokens.length) return false;
@@ -85,8 +123,14 @@ export const sendReminderOnce = async ({ userId, type, reminderDate, title, body
   const log = await reserveReminder(userId, type, reminderDate);
   if (!log) return false;
   try {
-    const { delivered, invalidTokens, receiptIds } = await sendExpoMessages(tokens, title, body, { type, reminderDate });
-    if (invalidTokens.length) await PushToken.destroy({ where: { token: { [Op.in]: invalidTokens } } });
+    const { delivered, invalidTokens, receiptIds } = await sendExpoMessages(
+      tokens,
+      title,
+      body,
+      { type, reminderDate },
+    );
+    if (invalidTokens.length)
+      await PushToken.destroy({ where: { token: { [Op.in]: invalidTokens } } });
     if (receiptIds.length) await recordExpoReceipts(receiptIds);
     if (!delivered) throw new Error("Expo did not accept any push messages");
     await log.update({ sent_at: new Date() });
@@ -120,26 +164,41 @@ export const checkExpoReceipts = async () => {
 
   const response = await fetch(EXPO_RECEIPTS_URL, {
     method: "POST",
-    headers: { Accept: "application/json", "Accept-encoding": "gzip, deflate", "Content-Type": "application/json" },
+    headers: {
+      Accept: "application/json",
+      "Accept-encoding": "gzip, deflate",
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ ids: pending.map(({ ticket_id }) => ticket_id) }),
   });
-  if (!response.ok) throw new Error(`Expo receipt service returned ${response.status}`);
+  if (!response.ok)
+    throw new Error(`Expo receipt service returned ${response.status}`);
   const result = await response.json();
-  const receipts = result.data && typeof result.data === "object" ? result.data : {};
+  const receipts =
+    result.data && typeof result.data === "object" ? result.data : {};
   const completed = pending.filter(({ ticket_id }) => receipts[ticket_id]);
   const invalidTokens = completed.flatMap(({ ticket_id, token }) =>
-    receipts[ticket_id]?.status === "error" && receipts[ticket_id]?.details?.error === "DeviceNotRegistered" ? [token] : [],
+    receipts[ticket_id]?.status === "error" &&
+    receipts[ticket_id]?.details?.error === "DeviceNotRegistered"
+      ? [token]
+      : [],
   );
   const receiptErrors = completed.flatMap(({ ticket_id }) =>
-    receipts[ticket_id]?.status === "error" ? [receipts[ticket_id]?.details?.error || "UnknownError"] : [],
+    receipts[ticket_id]?.status === "error"
+      ? [receipts[ticket_id]?.details?.error || "UnknownError"]
+      : [],
   );
   if (receiptErrors.length) {
-    console.error(`Expo push receipt errors: ${[...new Set(receiptErrors)].join(", ")}`);
+    console.error(
+      `Expo push receipt errors: ${[...new Set(receiptErrors)].join(", ")}`,
+    );
   }
-  if (invalidTokens.length) await PushToken.destroy({ where: { token: { [Op.in]: invalidTokens } } });
-  if (completed.length) await ExpoReceipt.update(
-    { checked_at: new Date() },
-    { where: { id: { [Op.in]: completed.map(({ id }) => id) } } },
-  );
+  if (invalidTokens.length)
+    await PushToken.destroy({ where: { token: { [Op.in]: invalidTokens } } });
+  if (completed.length)
+    await ExpoReceipt.update(
+      { checked_at: new Date() },
+      { where: { id: { [Op.in]: completed.map(({ id }) => id) } } },
+    );
   return { checked: completed.length, invalidTokens: invalidTokens.length };
 };
