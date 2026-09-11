@@ -39,13 +39,15 @@ router.get("/summary", protect, async (req, res, next) => {
       `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`),
     );
 
-    const totalGained = transactions
-      .filter((item) => item.direction === "gain")
-      .reduce((sum, item) => sum + item.amount, 0);
+    const totalGained = incomes.reduce(
+      (sum, item) => sum + item.amount,
+      0,
+    );
 
-    const totalLost = transactions
-      .filter((item) => item.direction === "loss")
-      .reduce((sum, item) => sum + item.amount, 0);
+    const totalLost = expenses.reduce(
+      (sum, item) => sum + item.amount,
+      0,
+    );
 
     res.status(200).json({
       success: true,
