@@ -75,7 +75,13 @@ export const logout = async (req, res, next) => {
 export const me = async (req, res, next) => {
   try {
     const user = await User.findByPk(req.user.id, {
-      attributes: ["id", "fullname", "email", "app_lock_enabled"],
+      attributes: [
+        "id",
+        "fullname",
+        "email",
+        "app_lock_enabled",
+        "vault_version",
+      ],
     });
 
     if (!user) {

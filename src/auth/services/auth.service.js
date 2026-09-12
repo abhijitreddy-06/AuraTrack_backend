@@ -31,6 +31,7 @@ const sessionUser = (user) => ({
   fullname: user.fullname,
   email: user.email,
   app_lock_enabled: user.app_lock_enabled,
+  vault_version: user.vault_version || "v1",
 });
 
 const generateRefreshToken = () => {
@@ -153,7 +154,13 @@ export const refreshToken = async (incomingRefreshToken) => {
       {
         model: User,
         as: "user",
-        attributes: ["id", "fullname", "email", "app_lock_enabled"],
+        attributes: [
+          "id",
+          "fullname",
+          "email",
+          "app_lock_enabled",
+          "vault_version",
+        ],
       },
     ],
   });
@@ -227,7 +234,7 @@ export const logout = async (incomingRefreshToken) => {
   if (!storedToken) {
     return;
   }
-  
+
   if (storedToken.revoked == false) {
     await storedToken.update({
       revoked: true,
