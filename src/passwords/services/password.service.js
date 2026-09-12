@@ -274,21 +274,8 @@ export const initializeV2Vault = async (userId, data) => {
       }
       return { alreadyInitialized: true, vault_version: user.vault_version };
     }
-    await existing.update({
-      kdf_salt,
-      kdf_params,
-      wrapped_dek,
-      wrapped_dek_nonce,
-    });
     await existing.update(updateFields);
   } else {
-    await UserVaultKey.create({
-      user_id: userId,
-      kdf_salt,
-      kdf_params,
-      wrapped_dek,
-      wrapped_dek_nonce,
-    });
     await UserVaultKey.create({ user_id: userId, ...updateFields });
   }
 
@@ -299,16 +286,11 @@ export const initializeV2Vault = async (userId, data) => {
   return { alreadyInitialized: false, vault_version: "v2" };
 };
 
-// ─── Phase 2/6: vault metadata ────────────────────────────────────────────────
 // ─── Phase 2/6/8: vault metadata ──────────────────────────────────────────────
 
 /**
  * GET /api/passwords/metadata
  *
- * Returns vault metadata for the requesting user.
- * Now includes migration_status and exposes kdf_salt/wrapped_dek for
- * v1 users who have started migration (so the frontend can resume with
- * the original salt/wrapped_dek on retry).
  * Returns vault metadata for the requesting user including recovery metadata.
  */
 export const getUserVaultMetadata = async (userId) => {
@@ -323,7 +305,6 @@ export const getUserVaultMetadata = async (userId) => {
   // Always look up user_vault_keys — even v1 users in migration have a row.
   const vaultKey = await UserVaultKey.findOne({
     where: { user_id: userId },
-    attributes: ["kdf_salt", "kdf_params", "wrapped_dek", "wrapped_dek_nonce"],
     attributes: [
       "kdf_salt",
       "kdf_params",
@@ -487,32 +468,12 @@ export const startVaultMigration = async (userId, data) => {
 
   if (existing) {
     // Row exists but wrapped_dek is null (e.g. failed before storing DEK).
-    await existing.update({
-      kdf_salt,
-      kdf_params,
-      wrapped_dek,
-      wrapped_dek_nonce,
-    });
     await existing.update(updateFields);
   } else {
-    await UserVaultKey.create({
-      user_id: userId,
-      kdf_salt,
-      kdf_params,
-      wrapped_dek,
-      wrapped_dek_nonce,
-    });
     await UserVaultKey.create({ user_id: userId, ...updateFields });
   }
 
   await user.update({ migration_status: "in_progress" });
-  return {
-    alreadyStarted: false,
-    kdf_salt,
-    kdf_params,
-    wrapped_dek,
-    wrapped_dek_nonce,
-  };
   return {
     alreadyStarted: false,
     ...updateFields,

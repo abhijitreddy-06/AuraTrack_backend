@@ -31,7 +31,7 @@ const sessionUser = (user) => ({
   fullname: user.fullname,
   email: user.email,
   app_lock_enabled: user.app_lock_enabled,
-  vault_version: user.vault_version || "v1",
+  vault_version: user.vault_version || "v2",
 });
 
 const generateRefreshToken = () => {
@@ -103,6 +103,8 @@ export const register = async ({ fullname, email, password }) => {
     fullname: normalizedFullname,
     email: normalizedEmail,
     password: passwordHash,
+    vault_version: "v2",
+    migration_status: "completed",
   });
 
   return await createAuthenticatedSession(user);

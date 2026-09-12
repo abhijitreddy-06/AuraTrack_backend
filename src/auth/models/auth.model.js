@@ -60,7 +60,7 @@ export const User = sequelize.define(
     vault_version: {
       type: DataTypes.ENUM("v1", "v2"),
       allowNull: false,
-      defaultValue: "v1",
+      defaultValue: "v2",
     },
 
     /**
