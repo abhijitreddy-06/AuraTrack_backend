@@ -35,15 +35,22 @@ const isV1Format = (str) =>
 const v1Encrypt = (value) => {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", encryptionKey, iv);
-  const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+  const encrypted = Buffer.concat([
+    cipher.update(value, "utf8"),
+    cipher.final(),
+  ]);
   return `${iv.toString("base64")}:${cipher.getAuthTag().toString("base64")}:${encrypted.toString("base64")}`;
 };
 
 const v1Decrypt = (payload) => {
-  const [iv, tag, data] = payload.split(":").map((p) => Buffer.from(p, "base64"));
+  const [iv, tag, data] = payload
+    .split(":")
+    .map((p) => Buffer.from(p, "base64"));
   const decipher = crypto.createDecipheriv("aes-256-gcm", encryptionKey, iv);
   decipher.setAuthTag(tag);
-  return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
+  return Buffer.concat([decipher.update(data), decipher.final()]).toString(
+    "utf8",
+  );
 };
 
 // ── Row-shape helpers ─────────────────────────────────────────────────────────
@@ -92,19 +99,24 @@ const getVaultVersion = async (userId) => {
 const validateV1 = (data, partial = false) => {
   const values = {};
   if (!partial || data.title !== undefined) {
-    if (typeof data.title !== "string" || !data.title.trim()) fail("Title is required", 400);
-    if (data.title.trim().length > 200) fail("Title must be 200 characters or fewer", 400);
+    if (typeof data.title !== "string" || !data.title.trim())
+      fail("Title is required", 400);
+    if (data.title.trim().length > 200)
+      fail("Title must be 200 characters or fewer", 400);
     values.title = data.title.trim();
   }
   if (!partial || data.key !== undefined) {
-    if (typeof data.key !== "string" || !data.key.trim()) fail("Username or email is required", 400);
+    if (typeof data.key !== "string" || !data.key.trim())
+      fail("Username or email is required", 400);
     values.key_ = v1Encrypt(data.key.trim());
   }
   if (!partial || data.value !== undefined) {
-    if (typeof data.value !== "string" || !data.value.trim()) fail("Password is required", 400);
+    if (typeof data.value !== "string" || !data.value.trim())
+      fail("Password is required", 400);
     values.value_ = v1Encrypt(data.value);
   }
-  if (partial && !Object.keys(values).length) fail("Provide password fields to update", 400);
+  if (partial && !Object.keys(values).length)
+    fail("Provide password fields to update", 400);
   return values;
 };
 
@@ -118,26 +130,36 @@ const validateV1 = (data, partial = false) => {
 const validateV2 = (data, partial = false) => {
   const values = {};
   if (!partial || data.title !== undefined) {
-    if (typeof data.title !== "string" || !data.title.trim()) fail("Title is required", 400);
-    if (data.title.trim().length > 200) fail("Title must be 200 characters or fewer", 400);
+    if (typeof data.title !== "string" || !data.title.trim())
+      fail("Title is required", 400);
+    if (data.title.trim().length > 200)
+      fail("Title must be 200 characters or fewer", 400);
     values.title = data.title.trim();
   }
   if (!partial || data.key_ !== undefined) {
-    if (typeof data.key_ !== "string" || !data.key_.trim()) fail("Encrypted key is required", 400);
+    if (typeof data.key_ !== "string" || !data.key_.trim())
+      fail("Encrypted key is required", 400);
     values.key_ = data.key_.trim();
   }
   if (!partial || data.value_ !== undefined) {
-    if (typeof data.value_ !== "string" || !data.value_.trim()) fail("Encrypted value is required", 400);
+    if (typeof data.value_ !== "string" || !data.value_.trim())
+      fail("Encrypted value is required", 400);
     values.value_ = data.value_.trim();
   }
-  if (partial && !Object.keys(values).length) fail("Provide password fields to update", 400);
+  if (partial && !Object.keys(values).length)
+    fail("Provide password fields to update", 400);
   return values;
 };
 
 // ─── CRUD service functions ───────────────────────────────────────────────────
 
 export const getPasswordEntries = async (userId) =>
-  (await PasswordEntry.findAll({ where: { user_id: userId }, order: [["title", "ASC"]] })).map(summaryEntry);
+  (
+    await PasswordEntry.findAll({
+      where: { user_id: userId },
+      order: [["title", "ASC"]],
+    })
+  ).map(summaryEntry);
 
 /**
  * GET /api/passwords/:id/secret
@@ -160,7 +182,9 @@ export const getPasswordSecret = async (userId, id) => {
 export const createPasswordEntry = async (userId, data) => {
   const version = await getVaultVersion(userId);
   const values = version === "v2" ? validateV2(data) : validateV1(data);
-  return summaryEntry(await PasswordEntry.create({ user_id: userId, ...values }));
+  return summaryEntry(
+    await PasswordEntry.create({ user_id: userId, ...values }),
+  );
 };
 
 /**
@@ -173,7 +197,8 @@ export const updatePasswordEntry = async (userId, id, data) => {
   const entry = await PasswordEntry.findOne({ where: { id, user_id: userId } });
   if (!entry) fail("Password entry not found", 404);
   const version = await getVaultVersion(userId);
-  const values = version === "v2" ? validateV2(data, true) : validateV1(data, true);
+  const values =
+    version === "v2" ? validateV2(data, true) : validateV1(data, true);
   await entry.update(values);
   return summaryEntry(entry);
 };
@@ -211,15 +236,21 @@ export const initializeV2Vault = async (userId, data) => {
   } = data;
 
   if (
-    typeof kdf_salt !== "string" || !kdf_salt.trim() ||
-    typeof kdf_params !== "object" || kdf_params === null ||
-    typeof wrapped_dek !== "string" || !wrapped_dek.trim() ||
-    typeof wrapped_dek_nonce !== "string" || !wrapped_dek_nonce.trim()
+    typeof kdf_salt !== "string" ||
+    !kdf_salt.trim() ||
+    typeof kdf_params !== "object" ||
+    kdf_params === null ||
+    typeof wrapped_dek !== "string" ||
+    !wrapped_dek.trim() ||
+    typeof wrapped_dek_nonce !== "string" ||
+    !wrapped_dek_nonce.trim()
   ) {
     fail("Missing or invalid vault initialisation fields", 400);
   }
 
-  const user = await User.findByPk(userId, { attributes: ["id", "vault_version"] });
+  const user = await User.findByPk(userId, {
+    attributes: ["id", "vault_version"],
+  });
   if (!user) fail("User not found", 404);
 
   const updateFields = { kdf_salt, kdf_params, wrapped_dek, wrapped_dek_nonce };
@@ -243,10 +274,21 @@ export const initializeV2Vault = async (userId, data) => {
       }
       return { alreadyInitialized: true, vault_version: user.vault_version };
     }
-    await existing.update({ kdf_salt, kdf_params, wrapped_dek, wrapped_dek_nonce });
+    await existing.update({
+      kdf_salt,
+      kdf_params,
+      wrapped_dek,
+      wrapped_dek_nonce,
+    });
     await existing.update(updateFields);
   } else {
-    await UserVaultKey.create({ user_id: userId, kdf_salt, kdf_params, wrapped_dek, wrapped_dek_nonce });
+    await UserVaultKey.create({
+      user_id: userId,
+      kdf_salt,
+      kdf_params,
+      wrapped_dek,
+      wrapped_dek_nonce,
+    });
     await UserVaultKey.create({ user_id: userId, ...updateFields });
   }
 
@@ -323,10 +365,14 @@ export const setVaultRecoveryMetadata = async (userId, data) => {
   } = data;
 
   if (
-    typeof recovery_kdf_salt !== "string" || !recovery_kdf_salt.trim() ||
-    typeof recovery_kdf_params !== "object" || recovery_kdf_params === null ||
-    typeof recovery_wrapped_dek !== "string" || !recovery_wrapped_dek.trim() ||
-    typeof recovery_wrapped_dek_nonce !== "string" || !recovery_wrapped_dek_nonce.trim()
+    typeof recovery_kdf_salt !== "string" ||
+    !recovery_kdf_salt.trim() ||
+    typeof recovery_kdf_params !== "object" ||
+    recovery_kdf_params === null ||
+    typeof recovery_wrapped_dek !== "string" ||
+    !recovery_wrapped_dek.trim() ||
+    typeof recovery_wrapped_dek_nonce !== "string" ||
+    !recovery_wrapped_dek_nonce.trim()
   ) {
     fail("Missing or invalid recovery metadata fields", 400);
   }
@@ -381,10 +427,14 @@ export const startVaultMigration = async (userId, data) => {
   } = data;
 
   if (
-    typeof kdf_salt !== "string" || !kdf_salt.trim() ||
-    typeof kdf_params !== "object" || kdf_params === null ||
-    typeof wrapped_dek !== "string" || !wrapped_dek.trim() ||
-    typeof wrapped_dek_nonce !== "string" || !wrapped_dek_nonce.trim()
+    typeof kdf_salt !== "string" ||
+    !kdf_salt.trim() ||
+    typeof kdf_params !== "object" ||
+    kdf_params === null ||
+    typeof wrapped_dek !== "string" ||
+    !wrapped_dek.trim() ||
+    typeof wrapped_dek_nonce !== "string" ||
+    !wrapped_dek_nonce.trim()
   ) {
     fail("Missing or invalid migration initialisation fields", 400);
   }
@@ -437,15 +487,32 @@ export const startVaultMigration = async (userId, data) => {
 
   if (existing) {
     // Row exists but wrapped_dek is null (e.g. failed before storing DEK).
-    await existing.update({ kdf_salt, kdf_params, wrapped_dek, wrapped_dek_nonce });
+    await existing.update({
+      kdf_salt,
+      kdf_params,
+      wrapped_dek,
+      wrapped_dek_nonce,
+    });
     await existing.update(updateFields);
   } else {
-    await UserVaultKey.create({ user_id: userId, kdf_salt, kdf_params, wrapped_dek, wrapped_dek_nonce });
+    await UserVaultKey.create({
+      user_id: userId,
+      kdf_salt,
+      kdf_params,
+      wrapped_dek,
+      wrapped_dek_nonce,
+    });
     await UserVaultKey.create({ user_id: userId, ...updateFields });
   }
 
   await user.update({ migration_status: "in_progress" });
-  return { alreadyStarted: false, kdf_salt, kdf_params, wrapped_dek, wrapped_dek_nonce };
+  return {
+    alreadyStarted: false,
+    kdf_salt,
+    kdf_params,
+    wrapped_dek,
+    wrapped_dek_nonce,
+  };
   return {
     alreadyStarted: false,
     ...updateFields,
@@ -521,8 +588,10 @@ export const uploadMigratedEntries = async (userId, entries) => {
     attributes: ["id", "vault_version", "migration_status"],
   });
   if (!user) fail("User not found", 404);
-  if (user.vault_version === "v2") fail("Cannot upload migration entries for a v2 user", 403);
-  if (user.migration_status !== "in_progress") fail("Migration is not in progress", 403);
+  if (user.vault_version === "v2")
+    fail("Cannot upload migration entries for a v2 user", 403);
+  if (user.migration_status !== "in_progress")
+    fail("Migration is not in progress", 403);
 
   if (!Array.isArray(entries) || entries.length === 0) {
     fail("entries must be a non-empty array", 400);
@@ -532,10 +601,14 @@ export const uploadMigratedEntries = async (userId, entries) => {
   for (const item of entries) {
     const { id, key_, value_ } = item;
     if (!uuid.test(id)) fail(`Invalid entry ID: ${id}`, 400);
-    if (typeof key_ !== "string" || !key_.trim()) fail(`key_ is required for entry ${id}`, 400);
-    if (typeof value_ !== "string" || !value_.trim()) fail(`value_ is required for entry ${id}`, 400);
+    if (typeof key_ !== "string" || !key_.trim())
+      fail(`key_ is required for entry ${id}`, 400);
+    if (typeof value_ !== "string" || !value_.trim())
+      fail(`value_ is required for entry ${id}`, 400);
 
-    const record = await PasswordEntry.findOne({ where: { id, user_id: userId } });
+    const record = await PasswordEntry.findOne({
+      where: { id, user_id: userId },
+    });
     if (!record) fail(`Entry not found: ${id}`, 404);
 
     await record.update({ key_: key_.trim(), value_: value_.trim() });
@@ -597,5 +670,9 @@ export const finalizeVaultMigration = async (userId) => {
 
   // All clear — flip to v2.
   await user.update({ vault_version: "v2", migration_status: "completed" });
-  return { vault_version: "v2", migrated_count: entries.length, already_completed: false };
+  return {
+    vault_version: "v2",
+    migrated_count: entries.length,
+    already_completed: false,
+  };
 };

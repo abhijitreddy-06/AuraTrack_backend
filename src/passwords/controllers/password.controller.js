@@ -24,7 +24,10 @@ export const initVault = async (req, res, next) => {
 
 export const setRecoveryMetadata = async (req, res, next) => {
   try {
-    const result = await service.setVaultRecoveryMetadata(req.user.id, req.body);
+    const result = await service.setVaultRecoveryMetadata(
+      req.user.id,
+      req.body,
+    );
     res.status(200).json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -70,7 +73,11 @@ export const updatePassword = async (req, res, next) => {
   try {
     res.status(200).json({
       success: true,
-      data: await service.updatePasswordEntry(req.user.id, req.params.id, req.body),
+      data: await service.updatePasswordEntry(
+        req.user.id,
+        req.params.id,
+        req.body,
+      ),
     });
   } catch (error) {
     next(error);
