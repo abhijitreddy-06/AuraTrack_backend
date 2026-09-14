@@ -15,16 +15,42 @@ export const registerPushToken = async (userId, token) => {
     throw error;
   }
 
-  const existing = await PushToken.findOne({ where: { token } });
-  if (existing) {
-    await existing.update({ user_id: userId, updated_at: new Date() });
-    return existing;
+  try {
+    // Atomic upsert: Reassigns token seamlessly across accounts without throwing UniqueConstraintError
+    const [record] = await PushToken.upsert(
+      {
+        user_id: userId,
+        token,
+        updated_at: new Date(),
+      },
+      {
+        conflictFields: ["token"],
+      },
+    );
+    return record;
+  } catch (error) {
+    // Fallback in case of constraint name variations or concurrent race conditions
+    if (error.name === "SequelizeUniqueConstraintError") {
+      const existing = await PushToken.findOne({ where: { token } });
+      if (existing) {
+        await existing.update({ user_id: userId, updated_at: new Date() });
+        return existing;
+      }
+    }
+    throw error;
   }
-  return PushToken.create({ user_id: userId, token });
 };
 
-export const unregisterPushToken = (userId, token) =>
-  PushToken.destroy({ where: { user_id: userId, token } });
+export const unregisterPushToken = async (userId, token) => {
+  // If a specific device token is provided, delete it to ensure this physical device
+  // never receives push notifications for ANY account until someone logs back in.
+  if (token) {
+    return PushToken.destroy({ where: { token } });
+  }
+  if (userId) {
+    return PushToken.destroy({ where: { user_id: userId } });
+  }
+};
 
 const reserveReminder = async (userId, type, reminderDate) => {
   const [log, created] = await NotificationLog.findOrCreate({

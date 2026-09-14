@@ -14,7 +14,6 @@ In Render's Environment page, add these required variables:
 
 - `SUPABASE_DB_URL` (or the local PostgreSQL `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, and `DB_HOST` variables)
 - `ACCESS_TOKEN_SECRET`
-- `PASSWORD_VAULT_KEY`
 - `OPENROUTER_API_KEY`
 
 Optional variables: `OPENROUTER_MODEL` (default: `openai/gpt-4o-mini`), `OPENROUTER_SITE_URL`, `OPENROUTER_APP_NAME`, `OPENROUTER_TIMEOUT_MS`, `PORT` (Render sets this automatically), `DB_LOGGING`, and `DB_SSL`.

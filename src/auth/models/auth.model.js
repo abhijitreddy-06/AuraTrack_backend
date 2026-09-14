@@ -45,17 +45,10 @@ export const User = sequelize.define(
      * vault_version tracks which encryption scheme protects this user's
      * password vault entries:
      *
-     *   'v1' — legacy server-side AES-256-GCM (PASSWORD_VAULT_KEY env var).
-     *           Default for all existing users. Server can decrypt entries.
-     *
      *   'v2' — client-side XChaCha20-Poly1305 (Argon2id-derived key).
-     *           Server stores opaque ciphertext and cannot decrypt entries.
-     *           Requires a corresponding row in user_vault_keys.
-     *
-     * Running both values simultaneously allows a safe, gradual migration
-     * without a big-bang cutover: v1 users keep working normally while
-     * v2 users get zero-knowledge encryption. Migration path: re-encrypt
-     * all entries client-side, upsert user_vault_keys, then flip to 'v2'.
+     *           Permanent vault architecture. Server stores opaque ciphertext
+     *           and cannot decrypt entries. Requires a row in user_vault_keys.
+     *   'v1' — legacy server-side vault (decommissioned in Phase 9).
      */
     vault_version: {
       type: DataTypes.ENUM("v1", "v2"),
