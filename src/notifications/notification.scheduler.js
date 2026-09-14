@@ -91,14 +91,14 @@ export const startNotificationScheduler = () => {
   if (schedulerStarted) return;
   schedulerStarted = true;
 
-  cron.schedule("0 10 * * *", () => {
+  cron.schedule("25 10 * * *", () => {
     // console.log("🔥 HABIT CRON FIRED", new Date().toISOString());
     void runHabitReminderJob();
   }, {
     timezone: IST_TIME_ZONE,
   });
 
-  cron.schedule("20 10 * * *", () => {
+  cron.schedule("30 10 * * *", () => {
     // console.log("🎂 BIRTHDAY CRON FIRED", new Date().toISOString());
     void runBirthdayReminderJob();
   }, {
