@@ -48,14 +48,23 @@ export const executeAiStructuredQuery = async (query) => {
     });
   }
 
+  const rawAttributes = model.rawAttributes || {};
+  const order = [];
+  if (rawAttributes.date) {
+    order.push(["date", "DESC"]);
+  }
+  if (rawAttributes.created_at) {
+    order.push(["created_at", "DESC"]);
+  }
+  if (rawAttributes.completed_date) {
+    order.push(["completed_date", "DESC"]);
+  }
+
   const options = {
     where: query.where,
     attributes: query.fields,
     limit: query.limit,
-    order: [
-      ["date", "DESC"],
-      ["created_at", "DESC"],
-    ],
+    ...(order.length > 0 ? { order } : {}),
   };
 
   if (["sum", "avg", "min", "max", "count"].includes(query.operation)) {
@@ -63,35 +72,33 @@ export const executeAiStructuredQuery = async (query) => {
     const aggregate =
       query.operation === "count"
         ? await model.count({ where: query.where })
-        : await model.aggregate(query.operation, {
-            attribute: aggregateField,
+        : await model.aggregate(aggregateField, query.operation, {
             where: query.where,
-            plain: false,
           });
+
+    const parsedValue =
+      aggregate === null || aggregate === undefined ? 0 : Number(aggregate);
 
     return {
       operation: query.operation,
       entity: query.entity,
       field: aggregateField,
-      value:
-        query.operation === "count"
-          ? aggregate
-          : Number(aggregate?.[0]?.[query.operation] ?? aggregate),
+      value: Number.isNaN(parsedValue) ? 0 : parsedValue,
     };
   }
 
   if (query.operation === "aggregate") {
     const aggregateFunction = String(query.aggregate || "sum").toLowerCase();
     const aggregateField = query.aggregate_field || query.field || "amount";
-    const result = await model.aggregate(aggregateFunction, {
-      attribute: aggregateField,
+    const result = await model.aggregate(aggregateField, aggregateFunction, {
       where: query.where,
-      plain: false,
     });
+    const parsedValue =
+      result === null || result === undefined ? 0 : Number(result);
     return {
       operation: aggregateFunction,
       field: aggregateField,
-      value: Number(result?.[0]?.[aggregateFunction] ?? result),
+      value: Number.isNaN(parsedValue) ? 0 : parsedValue,
     };
   }
 
@@ -100,6 +107,7 @@ export const executeAiStructuredQuery = async (query) => {
       where: query.where,
       attributes: query.fields,
       limit: query.limit,
+      ...(order.length > 0 ? { order } : {}),
     });
     return toSafeResponse(rows, query.fields);
   }
@@ -109,6 +117,7 @@ export const executeAiStructuredQuery = async (query) => {
       where: query.where,
       attributes: query.fields,
       limit: query.limit,
+      ...(order.length > 0 ? { order } : {}),
     });
     return toSafeResponse(rows, query.fields);
   }
