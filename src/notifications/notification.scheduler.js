@@ -98,7 +98,7 @@ export const startNotificationScheduler = () => {
     timezone: IST_TIME_ZONE,
   });
 
-  cron.schedule("10 23 * * *", () => {
+  cron.schedule("15sss 10 * * *", () => {
     // console.log("🎂 BIRTHDAY CRON FIRED", new Date().toISOString());
     void runBirthdayReminderJob();
   }, {
