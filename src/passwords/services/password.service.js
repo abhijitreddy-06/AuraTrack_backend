@@ -165,16 +165,6 @@ export const initializeV2Vault = async (userId, data) => {
     updateFields.recovery_wrapped_dek_nonce = recovery_wrapped_dek_nonce;
   }
 
-  const existing = await UserVaultKey.findOne({ where: { user_id: userId } });
-  if (existing) {
-    if (existing.wrapped_dek !== null) {
-      if (recovery_wrapped_dek && !existing.recovery_wrapped_dek) {
-        await existing.update({
-          recovery_kdf_salt,
-          recovery_kdf_params,
-          recovery_wrapped_dek,
-          recovery_wrapped_dek_nonce,
-        });
   try {
     const existing = await UserVaultKey.findOne({ where: { user_id: userId } });
     if (existing) {
@@ -189,21 +179,19 @@ export const initializeV2Vault = async (userId, data) => {
         }
         return { alreadyInitialized: true, vault_version: user.vault_version };
       }
-      return { alreadyInitialized: true, vault_version: user.vault_version };
       await existing.update(updateFields);
     } else {
       await UserVaultKey.create({ user_id: userId, ...updateFields });
     }
-    await existing.update(updateFields);
-  } else {
-    await UserVaultKey.create({ user_id: userId, ...updateFields });
   } catch (err) {
     if (
       err.name === "SequelizeUniqueConstraintError" ||
       err.original?.code === "23505"
     ) {
       // Race condition: concurrent device already initialized the vault
-      const current = await UserVaultKey.findOne({ where: { user_id: userId } });
+      const current = await UserVaultKey.findOne({
+        where: { user_id: userId },
+      });
       if (current && current.wrapped_dek !== null) {
         return { alreadyInitialized: true, vault_version: user.vault_version };
       }
