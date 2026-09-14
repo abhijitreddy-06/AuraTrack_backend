@@ -39,6 +39,62 @@ const toSafeResponse = (rows, fields) => {
   });
 };
 
+const normalizeWhereClause = (where = {}, model) => {
+  const rawAttributes = model.rawAttributes || {};
+  const normalized = {};
+
+  let textColumn = null;
+  if (rawAttributes.title) textColumn = "title";
+  else if (rawAttributes.name) textColumn = "name";
+  else if (rawAttributes.person_name) textColumn = "person_name";
+  else if (rawAttributes.text) textColumn = "text";
+
+  let dateColumn = null;
+  if (rawAttributes.date) dateColumn = "date";
+  else if (rawAttributes.completed_date) dateColumn = "completed_date";
+  else if (rawAttributes.created_at) dateColumn = "created_at";
+
+  for (const [key, value] of Object.entries(where)) {
+    if (value === undefined || value === null) continue;
+
+    if (rawAttributes[key]) {
+      normalized[key] = value;
+      continue;
+    }
+
+    if (
+      [
+        "text",
+        "title",
+        "person_name",
+        "name",
+        "description",
+        "category",
+      ].includes(key)
+    ) {
+      if (key === "person_name" && rawAttributes.name) {
+        normalized.name = value;
+      } else if (key === "name" && rawAttributes.person_name) {
+        normalized.person_name = value;
+      } else if (textColumn) {
+        normalized[textColumn] = value;
+      }
+      continue;
+    }
+
+    if (key === "date" && dateColumn) {
+      normalized[dateColumn] = value;
+      continue;
+    }
+
+    if (key === "user_id" && !rawAttributes.user_id) {
+      continue;
+    }
+  }
+
+  return normalized;
+};
+
 export const executeAiStructuredQuery = async (query) => {
   const model = MODEL_MAP[query.entity];
 
@@ -49,6 +105,8 @@ export const executeAiStructuredQuery = async (query) => {
   }
 
   const rawAttributes = model.rawAttributes || {};
+  const normalizedWhere = normalizeWhereClause(query.where, model);
+
   const order = [];
   if (rawAttributes.date) {
     order.push(["date", "DESC"]);
@@ -60,9 +118,16 @@ export const executeAiStructuredQuery = async (query) => {
     order.push(["completed_date", "DESC"]);
   }
 
+  const validAttributes =
+    Array.isArray(query.fields) && query.fields.length > 0
+      ? query.fields.filter((field) =>
+          Object.prototype.hasOwnProperty.call(rawAttributes, field),
+        )
+      : Object.keys(rawAttributes);
+
   const options = {
-    where: query.where,
-    attributes: query.fields,
+    where: normalizedWhere,
+    attributes: validAttributes,
     limit: query.limit,
     ...(order.length > 0 ? { order } : {}),
   };
@@ -71,9 +136,9 @@ export const executeAiStructuredQuery = async (query) => {
     const aggregateField = query.aggregate_field || query.field || "amount";
     const aggregate =
       query.operation === "count"
-        ? await model.count({ where: query.where })
+        ? await model.count({ where: normalizedWhere })
         : await model.aggregate(aggregateField, query.operation, {
-            where: query.where,
+            where: normalizedWhere,
           });
 
     const parsedValue =
@@ -91,7 +156,7 @@ export const executeAiStructuredQuery = async (query) => {
     const aggregateFunction = String(query.aggregate || "sum").toLowerCase();
     const aggregateField = query.aggregate_field || query.field || "amount";
     const result = await model.aggregate(aggregateField, aggregateFunction, {
-      where: query.where,
+      where: normalizedWhere,
     });
     const parsedValue =
       result === null || result === undefined ? 0 : Number(result);
@@ -104,27 +169,27 @@ export const executeAiStructuredQuery = async (query) => {
 
   if (query.operation === "summary") {
     const rows = await model.findAll({
-      where: query.where,
-      attributes: query.fields,
+      where: normalizedWhere,
+      attributes: validAttributes,
       limit: query.limit,
       ...(order.length > 0 ? { order } : {}),
     });
-    return toSafeResponse(rows, query.fields);
+    return toSafeResponse(rows, validAttributes);
   }
 
   if (query.operation === "trend") {
     const rows = await model.findAll({
-      where: query.where,
-      attributes: query.fields,
+      where: normalizedWhere,
+      attributes: validAttributes,
       limit: query.limit,
       ...(order.length > 0 ? { order } : {}),
     });
-    return toSafeResponse(rows, query.fields);
+    return toSafeResponse(rows, validAttributes);
   }
 
   const rows = await model.findAll(options);
   return {
-    records: toSafeResponse(rows, query.fields),
+    records: toSafeResponse(rows, validAttributes),
     total: rows.length,
   };
 };
